@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+<meta name="vitrina" content="/revelado">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Libro de Reclamaciones</title>
+<link rel="icon" href="/revelado/img/signo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/revelado/estilos.css">
+</head>
+<body class="trabajo">
+<main class="legal" id="libro">
+  <p><a href="/revelado/">Volver al inicio</a></p>
+  <h1 class="display">Libro de Reclamaciones</h1>
+  <p class="suave">Conforme al Código de Protección y Defensa del Consumidor (Ley N.° 29571) y al Reglamento del Libro de Reclamaciones (D.S. N.° 011-2011-PCM y modificatorias).</p>
+
+  <div class="caja" style="margin:24px 0">
+    <p style="margin:0"><b>Proveedor:</b> Nelson Bernal Cubillas<br>
+    <b>RUC:</b> <span class="pendiente">[COMPLETAR]</span><br>
+    <b>Domicilio:</b> <span class="pendiente">[COMPLETAR: dirección]</span>, Lima, Perú<br>
+    <b>Fecha:</b> <span id="hoy"></span></p>
+  </div>
+
+  <form id="form-libro" novalidate>
+    <h2>1. Tus datos</h2>
+    <label class="campo"><span>Nombre completo *</span><input class="input" name="nombre" autocomplete="name" required maxlength="120"></label>
+    <div class="dos" style="gap:12px">
+      <label class="campo"><span>Tipo de documento *</span><select class="input" name="doc_tipo"><option>DNI</option><option>CE</option><option>Pasaporte</option><option>RUC</option></select></label>
+      <label class="campo"><span>Número de documento *</span><input class="input" name="doc_numero" required maxlength="15" inputmode="numeric"></label>
+    </div>
+    <label class="campo"><span>Domicilio *</span><input class="input" name="domicilio" autocomplete="street-address" required maxlength="200"></label>
+    <div class="dos" style="gap:12px">
+      <label class="campo"><span>Correo *</span><input class="input" type="email" name="correo" autocomplete="email" required maxlength="120"><small>Te responderemos por este medio.</small></label>
+      <label class="campo"><span>Teléfono</span><input class="input" type="tel" name="telefono" autocomplete="tel" maxlength="20"></label>
+    </div>
+    <label class="campo"><span>Si eres menor de edad: nombre de tu madre, padre o tutor</span><input class="input" name="apoderado" maxlength="120"></label>
+
+    <h2>2. Lo que contrataste</h2>
+    <div class="dos" style="gap:12px">
+      <label class="campo"><span>Tipo *</span><select class="input" name="bien_tipo"><option value="servicio">Servicio</option><option value="producto">Producto</option></select></label>
+      <label class="campo"><span>Monto reclamado (S/)</span><input class="input" name="monto" inputmode="decimal" maxlength="30"></label>
+    </div>
+    <label class="campo"><span>Descripción del servicio *</span><input class="input" name="bien_descripcion" required maxlength="300" placeholder="Ej. paquete Fiesta para la boda del 21/11/2026"></label>
+
+    <h2>3. Tu reclamo o queja</h2>
+    <fieldset class="campo" style="border:0;padding:0;margin:0 0 18px">
+      <legend style="font-size:.875rem;font-weight:500;margin-bottom:8px">Tipo *</legend>
+      <label class="check" style="margin:0 0 8px"><input type="radio" name="tipo" value="reclamo" checked><span><b>Reclamo:</b> disconformidad relacionada con el servicio contratado.</span></label>
+      <label class="check" style="margin:0"><input type="radio" name="tipo" value="queja"><span><b>Queja:</b> disconformidad no relacionada con el servicio, o malestar con la atención recibida.</span></label>
+    </fieldset>
+    <label class="campo"><span>Detalle *</span><textarea class="input" name="detalle" required maxlength="2000"></textarea></label>
+    <label class="campo"><span>Pedido *</span><textarea class="input" name="pedido" required maxlength="1000" placeholder="¿Qué solución esperas?"></textarea></label>
+    <div style="position:absolute;left:-9999px" aria-hidden="true"><label>Web <input name="web" tabindex="-1" autocomplete="off"></label></div>
+
+    <p class="suave" style="font-size:.88rem">La formulación del reclamo no impide acudir a otras vías de solución de controversias ni es requisito previo para interponer una denuncia ante el INDECOPI. El proveedor debe responder en un plazo máximo de quince (15) días hábiles improrrogables. Usaremos estos datos solo para atender tu reclamo, como lo exige la ley (ver <a href="/revelado/privacidad.html">política de privacidad</a>).</p>
+    <p class="error-campo" id="libro-error" role="alert"></p>
+    <button class="btn" type="submit">Enviar reclamo</button>
+  </form>
+
+  <section id="constancia" hidden></section>
+</main>
+<script src="/revelado/comun.js"></script>
+<script src="/revelado/libro.js"></script>
+</body>
+</html>

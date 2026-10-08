@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta name="vitrina" content="/revelado">
+<meta charset="utf-8">
+<link rel="icon" href="/revelado/img/signo.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Pantalla en vivo</title>
+<link rel="stylesheet" href="/revelado/estilos.css">
+</head>
+<body class="pantalla">
+<div class="pant">
+  <section class="escena" id="escena" aria-label="Fotos de los invitados">
+    <div class="capa" id="capaA"><img class="fondo" alt=""><img class="foto" alt=""></div>
+    <div class="capa" id="capaB"><img class="fondo" alt=""><img class="foto" alt=""></div>
+    <div class="espera" id="espera"><b>Las fotos de los invitados aparecerán aquí</b><span>Escanea el código y cumple tu primer reto</span></div>
+    <div class="leyenda" id="leyenda" aria-live="polite"></div>
+    <div class="nueva" id="nueva" aria-hidden="true"></div>
+    <div class="flash-pant" id="flash" role="status"></div>
+  </section>
+  <aside class="lado">
+    <span class="monograma" id="mono" aria-hidden="true"></span>
+    <h1 class="display lado-nombres" id="nombres"></h1>
+    <div class="lado-meta" id="meta"></div>
+    <div class="rank-pant" id="rank" aria-label="Ranking"></div>
+    <div class="unete">
+      <div class="qr" id="qr"></div>
+      <div><b>Únete a los retos</b><p>Abre la cámara de tu celular y escanea. Sin descargar nada.</p><span class="url" id="url"></span></div>
+    </div>
+  </aside>
+</div>
+<div class="podio-pant" id="podio" aria-live="polite"></div>
+<script src="/revelado/vendor/qrcode.js"></script>
+<script src="/revelado/temas.js"></script>
+<script src="/revelado/comun.js"></script>
+<script src="/revelado/pantalla.js"></script>
+</body>
+</html>
