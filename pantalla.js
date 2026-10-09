@@ -49,6 +49,7 @@
     if (cola.length && i > cola.length) i = 0;
     if (!ultimoOrden || Date.now() - ultimoOrden >= LOTE_MS || !est.abierto) { pintarRanking(); ultimoOrden = Date.now(); }
     pintarRelampago();
+    pintarAviso();
     pintarPodio();
   }
 
@@ -119,6 +120,22 @@
     posPrev = new Map(top.map((p, idx) => [p.id, idx]));
     cont.querySelector('.vacio-pant')?.remove();
     if (!top.length) cont.append(el('p', { class: 'vacio-pant suave', style: 'font-size:2.2vh', texto: 'El ranking empieza con la primera foto.' }));
+  }
+
+  // Aviso de actividad (Premium): cartel grande durante 2 minutos desde que se envía
+  const ICONOS_AVISO = { baile: 'music-notes', torta: 'cake', bar: 'martini', horaloca: 'confetti', ramo: 'flower', brindis: 'champagne', cena: 'fork-knife' };
+  let avisoT2;
+  function pintarAviso() {
+    const caja = $('aviso');
+    const a = est.aviso;
+    const vigente = a && Date.now() - a.creado < 120000;
+    if (!vigente) { caja.classList.remove('ver'); caja.dataset.k = ''; return; }
+    if (caja.dataset.k === String(a.id)) return;
+    caja.dataset.k = String(a.id);
+    caja.replaceChildren(ico(ICONOS_AVISO[a.tipo] || 'megaphone'), el('div', {}, el('b', { texto: a.titulo }), a.cuerpo ? el('span', { texto: a.cuerpo }) : ''));
+    caja.classList.add('ver');
+    clearTimeout(avisoT2);
+    avisoT2 = setTimeout(() => caja.classList.remove('ver'), Math.max(5000, 120000 - (Date.now() - a.creado)));
   }
 
   function pintarRelampago() {

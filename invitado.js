@@ -1,6 +1,6 @@
 // App del invitado (se abre desde el QR). Vistas construidas una vez y actualizadas por clave cada 5 s.
 (() => {
-  const { codigo, api, postJSON, guardar, leer, el, ico, aviso, fechaLarga, fechaSello, comprimir, fotoUrl, reconciliar, contar, hoja, visor, reducir } = FV;
+  const { codigo, api, postJSON, guardar, leer, el, ico, aviso, fechaLarga, fechaSello, comprimir, fotoUrl, reconciliar, contar, hoja, visor, reducir, urlInvitado } = FV;
   const app = document.getElementById('app');
   const navIn = document.getElementById('nav-in');
   const nav = document.getElementById('nav');
@@ -11,6 +11,11 @@
   let info = null, est = null, sesion = leer(CLAVE), tab = 'retos', retoElegido = null;
   const subiendo = {}, previas = {}, pendientes = new Set();
   let puntosPrevios = null, posPrevias = new Map();
+  // Plan Básico: sin retos, el invitado sube fotos libres a un álbum compartido
+  const libre = () => !info.modulos.includes('retos');
+  const conAvisos = () => info.modulos.includes('avisos');
+  let avisoVisto = Number(leer(CLAVE + ':aviso') || 0), avisoCerrado = Number(leer(CLAVE + ':avisoCerrado') || 0);
+  let libreEstado = { i: 0, n: 0 };
   const v = {}; // referencias a nodos de cada vista
 
   const TABS = { retos: ['Retos', 'camera'], ranking: ['Ranking', 'trophy'], album: ['Álbum', 'images-square'], firmas: ['Firmas', 'signature'] };
@@ -40,13 +45,17 @@
   // ---------- arranque ----------
   async function iniciar() {
     if (!codigo) return mensaje('Falta el código del evento', 'Escanea de nuevo el QR de tu mesa.');
+    // Abierta desde el ícono de inicio (iPhone guarda aparte lo de Safari): recupera la sesión del invitado
+    const deInicio = location.hash.match(/^#s=([A-Za-z0-9]{20,64})$/);
+    if (deInicio) { sesion = { token: deInicio[1] }; guardar(CLAVE, sesion); history.replaceState(null, '', location.pathname + location.search); }
     try { info = await api('/e/' + codigo); }
     catch (e) { return mensaje(e.status === 404 ? 'No encontramos este evento' : 'No pudimos cargar la fiesta', e.status === 404 ? 'Revisa el QR o el enlace que te enviaron.' : e.message); }
     // ?tema= solo para la vista previa del panel (no guarda nada)
     const previa = new URLSearchParams(location.search).get('tema');
     if (previa && TEMAS[previa]) { info.tema = previa; info.previa = true; }
     aplicarTema(info.tema);
-    document.title = `${info.nombres} · Retos`;
+    document.title = `${info.nombres} · ${libre() ? 'Álbum' : 'Retos'}`;
+    if (conAvisos()) ponerManifiesto();
     if (!sesion?.token || info.soloLectura) return portada();
     await refrescar();
     if (sesion) entrar();
@@ -62,24 +71,25 @@
     const mesa = el('input', { class: 'input', id: 'mesa', maxlength: 20, inputmode: 'numeric' });
     const consiento = el('input', { type: 'checkbox', id: 'consiento' });
     const err = el('p', { class: 'error-campo', role: 'alert' });
-    const btn = el('button', { class: 'btn ancho', type: 'submit' }, 'Entrar a la fiesta', ico('arrow-right'));
+    const btn = el('button', { class: 'btn ancho', type: 'submit' }, libre() ? 'Entrar al álbum' : 'Entrar a la fiesta', ico('arrow-right'));
     const form = el('form', { class: 'portada-form', novalidate: true, onsubmit: async (e) => {
       e.preventDefault();
       err.textContent = '';
-      if (nombre.value.trim().length < 2) { err.textContent = 'Escribe tu nombre para aparecer en el ranking.'; nombre.focus(); return; }
+      if (nombre.value.trim().length < 2) { err.textContent = libre() ? 'Escribe tu nombre para firmar tus fotos.' : 'Escribe tu nombre para aparecer en el ranking.'; nombre.focus(); return; }
       if (!consiento.checked) { err.textContent = 'Marca la autorización para poder participar.'; consiento.focus(); return; }
       btn.disabled = true;
       try {
         const r = await postJSON(`/e/${codigo}/invitados`, { nombre: nombre.value, mesa: mesa.value, consiento: true });
         sesion = { token: r.token, nombre: r.nombre };
         guardar(CLAVE, sesion);
+        if (conAvisos()) ponerManifiesto();
         await refrescar();
         entrar();
       } catch (er) { err.textContent = er.message; btn.disabled = false; }
     } },
-      el('h2', { texto: 'Únete al juego' }),
-      el('p', { texto: 'Cumple los retos con fotos, suma puntos y gana premios. Sin descargar nada.' }),
-      el('label', { class: 'campo', for: 'nombre' }, el('span', { texto: 'Tu nombre' }), nombre, el('small', { id: 'ayuda-nombre', texto: 'Así aparecerás en el ranking y en la pantalla.' })),
+      el('h2', { texto: libre() ? 'Comparte tus fotos' : 'Únete al juego' }),
+      el('p', { texto: libre() ? 'Sube tus fotos de la boda y míralas todas en un solo álbum. Sin descargar nada.' : 'Cumple los retos con fotos, suma puntos y gana premios. Sin descargar nada.' }),
+      el('label', { class: 'campo', for: 'nombre' }, el('span', { texto: 'Tu nombre' }), nombre, el('small', { id: 'ayuda-nombre', texto: libre() ? 'Así sabrán quién tomó cada foto.' : 'Así aparecerás en el ranking y en la pantalla.' })),
       el('label', { class: 'campo', for: 'mesa' }, el('span', { texto: 'Número de mesa (opcional)' }), mesa),
       el('label', { class: 'check', for: 'consiento' }, consiento,
         el('span', {}, `Autorizo que mi nombre y las fotos que suba se muestren a los invitados y en la pantalla del evento, y que los novios las conserven. Se borran de este servicio ${info.diasRetencion >= 365 ? 'a los 12 meses' : `a los ${info.diasRetencion || 90} días`} de la boda. `,
@@ -115,6 +125,15 @@
   }
 
   function entrar() {
+    if (libre()) {
+      construirLibre();
+      nav.classList.add('oculto');
+      app.removeAttribute('aria-busy');
+      scrollTo({ top: 0 });
+      actualizar();
+      if (!sesion.demo) reintentarCola();
+      return;
+    }
     construir();
     const tabs = Object.keys(TABS).filter((t) => !MODULO_TAB[t] || info.modulos.includes(MODULO_TAB[t]));
     navIn.replaceChildren(...tabs.map((t) => el('button', { 'data-tab': t, 'aria-label': TABS[t][0], onclick: () => irA(t) }, ico(TABS[t][1]), el('span', { texto: TABS[t][0] }))));
@@ -141,7 +160,137 @@
     const mesaBtn = info.modulos.includes('mesa') ? el('button', { class: 'btn-icono', 'aria-label': 'Buscar mi mesa', onclick: abrirMesa }, ico('armchair')) : null;
     const barra = el('header', { class: 'barra' }, el('h1', { class: 'display barra-nombres', texto: info.nombres }), el('div', { class: 'barra-acciones' }, mesaBtn, v.marcador));
     v.vistas = { retos: vistaRetos(), ranking: vistaRanking(), album: vistaAlbum(), firmas: vistaFirmas() };
-    app.replaceChildren(barra, ...Object.values(v.vistas));
+    v.avisoBanner = el('div', { class: 'aviso-hueco' });
+    app.replaceChildren(barra, v.avisoBanner, ...Object.values(v.vistas));
+  }
+
+  // ---------- plan Básico: álbum compartido ----------
+  function construirLibre() {
+    const barra = el('header', { class: 'barra' }, el('h1', { class: 'display barra-nombres', texto: info.nombres }),
+      el('div', { class: 'barra-acciones' }, el('button', { class: 'btn-icono', 'aria-label': 'Compartir el álbum', onclick: compartir }, ico('share-network'))));
+    v.avisoBanner = el('div', { class: 'aviso-hueco' });
+    v.subAlbum = el('p', { class: 'suave', style: 'margin:-6px 0 18px' });
+    v.progreso = el('p', { class: 'progreso-libre', 'aria-live': 'polite' });
+    v.muro = el('div', { class: 'muro' });
+    v.cerrado = el('div', {});
+    v.vistas = { album: el('section', { 'aria-label': 'Álbum' },
+      el('div', { class: 'titulo-vista' }, el('h2', { class: 'display', texto: 'Álbum' })), v.subAlbum,
+      el('div', { class: 'subida-libre' },
+        el('button', { class: 'btn ancho', onclick: elegirLibres }, ico('camera-plus'), 'Subir fotos'),
+        el('button', { class: 'btn sec ancho', onclick: compartir }, ico('whatsapp-logo'), 'Invitar a subir fotos'),
+        v.progreso),
+      v.cerrado, v.muro) };
+    app.replaceChildren(barra, v.avisoBanner, v.vistas.album);
+  }
+
+  function elegirLibres() {
+    if (sesion.demo) return aviso('En la demo no se suben fotos. En la boda real se abre tu galería y eliges varias a la vez.');
+    if (!est.abierto) return aviso('El álbum ya no recibe fotos', true);
+    retoElegido = 'libre';
+    archivo.multiple = true;
+    archivo.value = '';
+    archivo.click();
+  }
+
+  async function subirLibres(files) {
+    let ok = 0;
+    for (const [i, file] of files.slice(0, 20).entries()) {
+      libreEstado = { i: i + 1, n: Math.min(files.length, 20) };
+      v.progreso.textContent = `Preparando ${libreEstado.i} de ${libreEstado.n}…`;
+      try {
+        const [foto, mini] = await Promise.all([comprimir(file, 1600, 0.82), comprimir(file, 420, 0.7)]);
+        if (await enviar({ k: `${codigo}-libre-${Date.now()}-${i}`, codigo, reto: '', foto, mini })) ok++;
+      } catch (e) { aviso(e.message || 'No pudimos procesar una foto', true); }
+    }
+    v.progreso.textContent = ok ? `${ok} ${ok === 1 ? 'foto subida' : 'fotos subidas'} al álbum` : '';
+    libreEstado = { i: 0, n: 0 };
+  }
+
+  // Compartir la boda: menú nativo del celular o WhatsApp
+  async function compartir() {
+    const url = urlInvitado(codigo, info);
+    const texto = libre() ? `Sube tus fotos de la boda de ${info.nombres} y mira el álbum de todos` : `Únete a los retos de fotos de la boda de ${info.nombres}`;
+    if (navigator.share) {
+      try { await navigator.share({ title: info.nombres, text: texto, url }); return; } catch (e) { if (e.name === 'AbortError') return; }
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${texto}: ${url}`)}`, '_blank', 'noopener');
+  }
+
+  // ---------- avisos de actividades (Premium) ----------
+  function ponerManifiesto() {
+    const t = sesion?.token ? `?t=${encodeURIComponent(sesion.token)}` : '';
+    let l = document.querySelector('link[rel="manifest"]');
+    if (!l) { l = document.createElement('link'); l.rel = 'manifest'; document.head.append(l); }
+    l.href = `/revelado/api/e/${codigo}/manifest${t}`;
+    if (!document.querySelector('meta[name="apple-mobile-web-app-capable"]')) {
+      for (const [n, c] of [['apple-mobile-web-app-capable', 'yes'], ['apple-mobile-web-app-title', info.nombres.slice(0, 24)]]) { const m = document.createElement('meta'); m.name = n; m.content = c; document.head.append(m); }
+      const ic = document.createElement('link'); ic.rel = 'apple-touch-icon'; ic.href = '/revelado/img/icono-180.png'; document.head.append(ic);
+    }
+  }
+
+  function tarjetaAvisos() {
+    if (!conAvisos()) return null;
+    const estado = leer(CLAVE + ':push');
+    if (estado === 'ok' || estado === 'cerrado') return null;
+    const n = el('div', { class: 'tarjeta-avisos' }, ico('bell-ringing'),
+      el('div', {}, el('b', { texto: 'Que no te pierdas nada' }), el('span', { texto: 'Te avisamos cuando empiece el baile, llegue la torta o abra el bar.' })),
+      el('div', { class: 'tarjeta-avisos-acciones' },
+        el('button', { class: 'btn peq', onclick: activarAvisos }, 'Activar avisos'),
+        el('button', { class: 'enlace', onclick: () => { guardar(CLAVE + ':push', 'cerrado'); n.remove(); } }, 'Ahora no')));
+    return n;
+  }
+
+  const b64aBytes = (b64) => { const s = atob((b64 + '==='.slice((b64.length + 3) % 4)).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(s, (c) => c.charCodeAt(0)); };
+
+  async function activarAvisos() {
+    if (sesion.demo) return aviso('En la boda real, aquí cada invitado activa los avisos en su celular.');
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const instalada = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      if (ios && !instalada) return instruccionesIphone();
+      return aviso('Este navegador no permite avisos. Igual los verás aquí y en la pantalla.', true);
+    }
+    try {
+      await navigator.serviceWorker.register('/revelado/sw.js');
+      const permiso = await Notification.requestPermission();
+      if (permiso !== 'granted') return aviso('Sin tu permiso no podemos avisarte. Igual verás los avisos aquí y en la pantalla.', true);
+      const { clave } = await api('/push/clave');
+      const reg = await navigator.serviceWorker.ready;
+      const sub = (await reg.pushManager.getSubscription()) || (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64aBytes(clave) }));
+      await postJSON(`/e/${codigo}/push`, { token: sesion.token, sub: sub.toJSON() });
+      guardar(CLAVE + ':push', 'ok');
+      document.querySelector('.tarjeta-avisos')?.remove();
+      aviso('Listo: te avisaremos de los momentos de la fiesta');
+    } catch (e) { aviso(e.message || 'No se pudieron activar los avisos', true); }
+  }
+
+  function instruccionesIphone() {
+    ponerManifiesto();
+    hoja(el('div', {},
+      el('h2', { class: 'display', texto: 'Avisos en iPhone' }),
+      el('p', { class: 'suave', texto: 'Apple solo envía avisos a las páginas guardadas en tu inicio. Toma diez segundos:' }),
+      el('ol', { class: 'pasos-iphone' },
+        el('li', {}, 'Toca ', el('b', { texto: 'Compartir' }), ' (el cuadrado con la flecha, abajo).'),
+        el('li', {}, 'Elige ', el('b', { texto: 'Agregar a inicio' }), '.'),
+        el('li', {}, 'Abre la boda desde el nuevo ícono y toca ', el('b', { texto: 'Activar avisos' }), '.')),
+      el('p', { class: 'suave', style: 'font-size:.88rem', texto: 'Si prefieres no hacerlo, igual verás cada aviso aquí y en la pantalla del local.' })), { titulo: 'Avisos en iPhone' });
+  }
+
+  function pintarAviso() {
+    if (!v.avisoBanner) return;
+    const a = est?.aviso;
+    const k = a ? String(a.id) : '';
+    if (v.avisoBanner.dataset.k === k) return;
+    v.avisoBanner.dataset.k = k;
+    if (!a || a.id <= avisoCerrado) { v.avisoBanner.replaceChildren(); return; }
+    v.avisoBanner.replaceChildren(el('div', { class: 'aviso-fiesta', role: 'status' }, ico('bell-ringing'),
+      el('div', {}, el('b', { texto: a.titulo }), a.cuerpo ? el('span', { texto: a.cuerpo }) : null),
+      el('button', { class: 'btn-icono', 'aria-label': 'Cerrar aviso', onclick: () => { avisoCerrado = a.id; guardar(CLAVE + ':avisoCerrado', a.id); v.avisoBanner.replaceChildren(); } }, ico('x'))));
+    if (a.id > avisoVisto) {
+      avisoVisto = a.id; guardar(CLAVE + ':aviso', a.id);
+      navigator.vibrate?.([120, 60, 120]);
+      if (!reducir.matches) v.avisoBanner.firstChild.animate([{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+    }
   }
 
   function vistaRetos() {
@@ -156,7 +305,7 @@
     return el('section', { 'aria-label': 'Retos' }, v.relampago,
       el('div', { class: 'titulo-vista' }, el('h2', { class: 'display', texto: 'Retos' }),
         el('div', { class: 'contador' }, v.hechos, el('small', { texto: `de ${info.retos.length} cumplidos` }))),
-      v.tira, v.subRetos, v.siguiente, v.trivia,
+      v.tira, v.subRetos, tarjetaAvisos(), v.siguiente, v.trivia,
       el('div', { class: 'rollo-cabeza' }, el('span', { class: 'cursiva', texto: 'El rollo completo' }), el('small', { texto: `${info.retos.length} retos` })),
       v.rollo);
   }
@@ -171,7 +320,10 @@
     v.subAlbum = el('p', { class: 'suave', style: 'margin:-6px 0 18px' });
     v.muro = el('div', { class: 'muro' });
     v.cerrado = el('div', {});
-    return el('section', { 'aria-label': 'Álbum' }, el('div', { class: 'titulo-vista' }, el('h2', { class: 'display', texto: 'Álbum' })), v.subAlbum, v.cerrado, v.muro);
+    return el('section', { 'aria-label': 'Álbum' },
+      el('div', { class: 'titulo-vista' }, el('h2', { class: 'display', texto: 'Álbum' }),
+        el('button', { class: 'btn sec peq', onclick: compartir }, ico('share-network'), 'Compartir')),
+      v.subAlbum, v.cerrado, v.muro);
   }
   function vistaFirmas() {
     const txt = el('textarea', { class: 'input', id: 'firma', maxlength: 400, 'aria-describedby': 'ayuda-firma', disabled: sesion?.demo || null });
@@ -193,6 +345,8 @@
   // ---------- actualización (cada 5 s) ----------
   function actualizar() {
     if (!est || !v.vistas) return;
+    pintarAviso();
+    if (libre()) { actualizarAlbum(); return; }
     actualizarMarcador();
     actualizarRetos();
     actualizarRanking();
@@ -218,6 +372,7 @@
   const reloj = (hasta) => { const s = Math.max(0, Math.round((hasta - Date.now()) / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
   function actualizarRetos() {
+    if (!v.rollo) return;
     const mias = new Map((est.yo?.fotos || []).map((f) => [f.reto_id, f]));
     const hechos = info.retos.filter((r) => mias.has(r.id)).length;
     v.hechos.textContent = hechos;
@@ -317,11 +472,13 @@
     if (sesion.demo) return aviso('En la demo no se suben fotos. En la boda real se abre la cámara aquí.');
     if (!est.abierto) return aviso('El concurso ya cerró', true);
     retoElegido = retoId;
+    archivo.multiple = false;
     archivo.value = '';
     archivo.click();
   }
 
   archivo.addEventListener('change', async () => {
+    if (retoElegido === 'libre') return subirLibres([...(archivo.files || [])]);
     const file = archivo.files?.[0];
     const retoId = retoElegido;
     if (!file || !retoId) return;
@@ -340,6 +497,7 @@
   }
 
   function enviar(item, silencioso = false) {
+    let subio = false;
     return new Promise((ok) => {
       const fd = new FormData();
       fd.append('token', sesion.token);
@@ -352,6 +510,7 @@
       xhr.upload.onprogress = (e) => {
         if (!e.lengthComputable || silencioso) return;
         subiendo[item.reto] = Math.round((e.loaded / e.total) * 100);
+        if (libreEstado.n && v.progreso) v.progreso.textContent = `Subiendo ${libreEstado.i} de ${libreEstado.n} · ${subiendo[item.reto]}%`;
         if (Date.now() - ultimo > 120) { ultimo = Date.now(); actualizarRetos(); }
       };
       xhr.onload = async () => {
@@ -364,8 +523,9 @@
           const cuadro = [...v.rollo.children].find((x) => x.dataset.k === String(item.reto));
           if (cuadro) { cuadro._revelar = true; if (cuadro._img) cuadro._img.dataset.src = ''; }
           disparoFlash();
-          aviso(`+${r.puntos} puntos${r.reemplazo ? ' · foto cambiada' : ''}`);
+          if (!libreEstado.n) aviso(r.puntos ? `+${r.puntos} puntos${r.reemplazo ? ' · foto cambiada' : ''}` : 'Tu foto ya está en el álbum');
           await refrescar();
+          subio = true;
         } else if (xhr.status >= 500 || xhr.status === 429) {
           await encolar(item);
         } else {
@@ -374,9 +534,9 @@
           aviso(r.error || 'No se pudo subir la foto', true);
         }
         actualizar();
-        ok();
+        ok(subio);
       };
-      xhr.onerror = async () => { delete subiendo[item.reto]; await encolar(item); actualizar(); ok(); };
+      xhr.onerror = async () => { delete subiendo[item.reto]; await encolar(item); actualizar(); ok(false); };
       xhr.send(fd);
     });
   }

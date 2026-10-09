@@ -302,6 +302,24 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
 .firma p { margin: 0 0 8px; font-family: var(--f-serif); font-style: italic; font-weight: 340; font-size: 1.4rem; line-height: 1.32; letter-spacing: -0.005em; }
 .firma small { color: var(--c-texto-2); }
 
+/* Avisos de actividades (Premium): banner bajo la cabecera y tarjeta para activarlos */
+.aviso-hueco:empty { display: none; }
+.aviso-fiesta { position: sticky; top: 64px; z-index: 15; display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; margin: 14px 0 0; padding: 14px 8px 14px 18px; border-radius: var(--r-tarjeta); background: var(--c-acento); color: var(--c-acento-txt); box-shadow: 0 14px 30px -16px var(--c-acento); }
+.aviso-fiesta > .icono { width: 26px; height: 26px; }
+.aviso-fiesta b { display: block; font-family: var(--f-serif); font-weight: 450; font-size: 1.25rem; line-height: 1.15; }
+.aviso-fiesta span { display: block; font-size: .9rem; opacity: .9; }
+.aviso-fiesta .btn-icono { color: inherit; }
+.tarjeta-avisos { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: start; margin: 22px 0 0; padding: 18px 0; border-top: 1px solid var(--c-linea); border-bottom: 1px solid var(--c-linea); }
+.tarjeta-avisos > .icono { width: 24px; height: 24px; margin-top: 2px; color: var(--c-acento-texto); }
+.tarjeta-avisos b { display: block; font-family: var(--f-serif); font-weight: 400; font-size: 1.25rem; }
+.tarjeta-avisos span { display: block; color: var(--c-texto-2); font-size: .9rem; }
+.tarjeta-avisos-acciones { grid-column: 2; display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+.pasos-iphone { margin: 14px 0; padding-left: 22px; display: grid; gap: 10px; }
+/* Plan Básico: subir y compartir */
+.subida-libre { display: grid; gap: 10px; margin: 6px 0 26px; }
+.progreso-libre { margin: 2px 0 0; min-height: 1.4em; text-align: center; color: var(--c-texto-2); font-size: .9rem; }
+.titulo-vista .btn.peq { min-height: 38px; padding: 0 14px; }
+
 /* Vacíos */
 .vacio { display: grid; justify-items: center; text-align: center; gap: 6px; padding: 44px 12px; color: var(--c-texto-2); }
 .vacio b { color: var(--c-texto); font-family: var(--f-serif); font-weight: 400; font-size: 1.35rem; }
@@ -407,6 +425,11 @@ body.pantalla { overflow: hidden; height: 100dvh; background: #0A0A0B; color: #F
 .unete p { margin: 0; color: #B3AEA6; font-size: 2vh; }
 .unete .url { font-family: var(--f-mono); color: #F2F0EC; font-size: 1.9vh; margin-top: .8vh; display: block; }
 
+.aviso-pant { position: absolute; inset: auto 4.5vh 13vh 4.5vh; z-index: 4; display: grid; grid-template-columns: auto 1fr; gap: 3vh; align-items: center; padding: 3.4vh 4vh; border-radius: 2vh; background: var(--c-acento); color: var(--c-acento-txt); box-shadow: 0 3vh 8vh -3vh rgba(0,0,0,.7); opacity: 0; transform: translateY(4vh); transition: opacity 500ms ease, transform 700ms var(--ease-out); }
+.aviso-pant.ver { opacity: 1; transform: none; }
+.aviso-pant .icono { width: 8vh; height: 8vh; }
+.aviso-pant b { display: block; font-family: var(--f-serif); font-weight: 420; font-size: 7.4vh; line-height: 1; letter-spacing: -0.015em; }
+.aviso-pant span { display: block; margin-top: 1vh; font-size: 2.8vh; opacity: .9; }
 .podio-pant { position: fixed; inset: 0; z-index: 5; display: grid; place-content: center; justify-items: center; gap: 2vh; text-align: center; background: #0A0A0B; opacity: 0; pointer-events: none; transition: opacity 800ms ease; }
 .podio-pant.ver { opacity: 1; pointer-events: auto; }
 .podio-pant h1 { margin: 0; font-size: 9vh; }
@@ -467,6 +490,22 @@ body.trabajo {
 .preg-edit .op { display: flex; gap: 8px; align-items: center; }
 .preg-edit .op input[type=radio] { width: 20px; height: 20px; accent-color: var(--c-acento); flex: none; }
 @media (max-width: 560px) { .preg-edit .ops { grid-template-columns: 1fr; } }
+
+/* Panel: avisos de actividades */
+.avisos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 18px; }
+.aviso-boton { display: grid; gap: 4px; justify-items: start; text-align: left; padding: 16px; border-radius: var(--r-tarjeta); border: 1px solid var(--c-linea-fuerte); background: var(--c-superficie); color: var(--c-texto); transition: transform 140ms var(--ease-out), border-color 160ms ease; }
+.aviso-boton:active { transform: scale(.97); }
+.aviso-boton[disabled] { opacity: .5; }
+.aviso-boton .icono { width: 24px; height: 24px; color: var(--c-acento); margin-bottom: 4px; }
+.aviso-boton b { font-size: 1rem; }
+.aviso-boton small { color: var(--c-texto-2); font-size: .8rem; line-height: 1.35; }
+@media (hover: hover) and (pointer: fine) { .aviso-boton:hover { border-color: var(--c-texto); } }
+.fila-aviso { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--c-linea); }
+.fila-aviso:last-child { border-bottom: 0; }
+.fila-aviso .icono { width: 20px; height: 20px; color: var(--c-acento); }
+.fila-aviso b { display: block; font-size: .95rem; }
+.fila-aviso small { color: var(--c-texto-2); font-size: .82rem; }
+.fila-aviso .suave { font-size: .8rem; white-space: nowrap; }
 
 /* Selector de paletas */
 .paletas { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
