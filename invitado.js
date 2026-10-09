@@ -145,15 +145,20 @@
   }
 
   function vistaRetos() {
-    v.hechos = el('b', { class: 'mono', texto: '00' });
+    v.hechos = el('b', { texto: '0' });
     v.relampago = el('div', {});
-    v.subRetos = el('p', { class: 'suave', style: 'margin:-6px 0 18px' });
+    // Avance como tira de negativos: un cuadro por reto, se llena al cumplirlo
+    v.tira = el('div', { class: 'tira', 'aria-hidden': 'true', style: `grid-template-columns:repeat(${info.retos.length},1fr)` }, info.retos.map(() => el('i')));
+    v.subRetos = el('p', { class: 'suave sub-retos' });
+    v.siguiente = el('div', {});
     v.trivia = el('div', {});
     v.rollo = el('div', { class: 'rollo' });
     return el('section', { 'aria-label': 'Retos' }, v.relampago,
       el('div', { class: 'titulo-vista' }, el('h2', { class: 'display', texto: 'Retos' }),
-        el('div', { class: 'contador' }, v.hechos, el('small', { texto: `de ${String(info.retos.length).padStart(2, '0')} cumplidos` }))),
-      v.subRetos, v.trivia, v.rollo);
+        el('div', { class: 'contador' }, v.hechos, el('small', { texto: `de ${info.retos.length} cumplidos` }))),
+      v.tira, v.subRetos, v.siguiente, v.trivia,
+      el('div', { class: 'rollo-cabeza' }, el('span', { class: 'cursiva', texto: 'El rollo completo' }), el('small', { texto: `${info.retos.length} retos` })),
+      v.rollo);
   }
   function vistaRanking() {
     v.subRank = el('p', { class: 'suave', style: 'margin:-6px 0 18px' });
@@ -215,12 +220,14 @@
   function actualizarRetos() {
     const mias = new Map((est.yo?.fotos || []).map((f) => [f.reto_id, f]));
     const hechos = info.retos.filter((r) => mias.has(r.id)).length;
-    v.hechos.textContent = String(hechos).padStart(2, '0');
+    v.hechos.textContent = hechos;
+    info.retos.forEach((x, i) => v.tira.children[i]?.classList.toggle('lleno', mias.has(x.id) || !!previas[x.id]));
     const abierto = est.abierto;
     v.subRetos.textContent = !abierto ? 'El concurso cerró. Gracias por jugar: mira el ranking final.'
-      : sesion.demo ? 'Así ve los retos una invitada. Toca un reto para ver qué pasa.'
+      : sesion.demo ? 'Así ve los retos una invitada. En la boda real, cada reto abre la cámara.'
       : 'Una foto por reto. Puedes cambiarla cuando quieras.';
     const r = relampagoActivo();
+    pintarSiguiente(mias, r, abierto);
     if ((r?.id || null) !== (v.relampago.dataset.id ? Number(v.relampago.dataset.id) : null)) {
       v.relampago.dataset.id = r?.id || '';
       v.relampago.replaceChildren(...(r ? [el('div', { class: 'relampago', role: 'status' }, ico('lightning-fill'),
@@ -238,14 +245,40 @@
     reconciliar(v.rollo, info.retos, (x) => x.id, crearCuadro, (n, x, i) => actualizarCuadro(n, x, i, mias.get(x.id), relId === x.id, abierto));
   }
 
+  // Tarjeta destacada: el próximo reto por cumplir (el relámpago tiene prioridad)
+  function pintarSiguiente(mias, rel, abierto) {
+    const pendiente = (x) => !mias.has(x.id) && !previas[x.id];
+    const sig = (rel && pendiente(rel) ? info.retos.find((x) => x.id === rel.id) : null) || info.retos.find(pendiente);
+    const doble = !!(rel && sig && rel.id === sig.id);
+    const clave = !abierto ? 'cerrado' : sig ? `${sig.id}:${doble}` : 'fin';
+    if (v.siguiente.dataset.k === clave) return;
+    v.siguiente.dataset.k = clave;
+    if (!abierto) return v.siguiente.replaceChildren();
+    if (!sig) return v.siguiente.replaceChildren(el('article', { class: 'destacado' },
+      el('p', { class: 'destacado-eti', texto: 'Rollo completo' }),
+      el('h3', { class: 'destacado-titulo', texto: 'Cumpliste todos los retos' }),
+      el('p', { class: 'destacado-desc', texto: 'Puedes cambiar cualquier foto cuando quieras. Mira cómo vas en el ranking.' })));
+    const n = String(info.retos.indexOf(sig) + 1).padStart(2, '0');
+    v.siguiente.replaceChildren(el('article', { class: 'destacado' + (doble ? ' doble' : '') },
+      el('p', { class: 'destacado-eti', texto: doble ? `Reto relámpago · Nº ${n}` : `Tu siguiente reto · Nº ${n}` }),
+      el('h3', { class: 'destacado-titulo', texto: sig.titulo }),
+      sig.descripcion ? el('p', { class: 'destacado-desc', texto: sig.descripcion }) : null,
+      el('div', { class: 'destacado-pie' },
+        el('span', { class: 'pts', texto: doble ? `${sig.puntos * 2} puntos, solo por ahora` : `${sig.puntos} puntos` }),
+        el('button', { class: 'btn', onclick: () => elegir(sig.id) }, ico('camera'), 'Tomar la foto'))));
+    if (!reducir.matches) v.siguiente.firstChild.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+  }
+
   function crearCuadro(r, i) {
     const n = el('div', { class: 'cuadro' });
     n._media = el('button', { class: 'cuadro-media', onclick: () => elegir(r.id) });
-    n._num = el('span', { class: 'cuadro-num', 'aria-hidden': 'true', texto: String(i + 1).padStart(2, '0') });
+    n._num = el('span', { class: 'cuadro-num', 'aria-hidden': 'true', texto: `Nº ${String(i + 1).padStart(2, '0')}` });
+    // El marco vacío muestra la consigna del reto, como una tarjeta de mesa
+    n._desc = el('span', { class: 'cuadro-desc', 'aria-hidden': 'true' });
     n._cta = el('span', { class: 'cuadro-cta', 'aria-hidden': 'true' }, ico('camera-plus'));
     n._estado = el('div', { class: 'cuadro-estado oculto' });
-    n._media.append(n._num, n._cta, n._estado);
-    n._pts = el('span', { class: 'mono' });
+    n._media.append(n._num, n._desc, n._cta, n._estado);
+    n._pts = el('span', { class: 'pts' });
     n._marca = el('span', {});
     n.append(n._media, el('div', { class: 'cuadro-titulo', texto: r.titulo }), el('div', { class: 'cuadro-pie' }, n._pts, n._marca));
     return n;
@@ -266,6 +299,8 @@
       if (!n._sello && info.fecha && info.desechable) { n._sello = el('span', { class: 'sello', 'aria-hidden': 'true', texto: fechaSello(info.fecha) }); n._media.append(n._sello); }
     }
     n._num.hidden = !!src;
+    n._desc.textContent = r.descripcion || r.titulo;
+    n._desc.hidden = hecho;
     n._cta.hidden = hecho || !abierto;
     let estado = null;
     if (pct != null) estado = [el('div', { class: 'barra-progreso' }, el('i', { style: `transform:scaleX(${pct / 100})` })), el('span', { texto: pct < 100 ? `Subiendo ${pct}%` : 'Revelando…' })];

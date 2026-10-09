@@ -209,10 +209,13 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
 .cuadro { display: grid; gap: 8px; text-align: left; padding: 0; border: 0; background: none; color: inherit; transition: transform 160ms var(--ease-out); }
 .cuadro:active { transform: scale(0.97); }
 .cuadro-media { position: relative; display: block; width: 100%; padding: 0; aspect-ratio: 4 / 5; border-radius: var(--r-tarjeta); overflow: hidden; background: color-mix(in oklab, var(--c-superficie) 55%, var(--c-fondo)); border: 1px solid var(--c-linea); transition: background-color 300ms ease; }
-.cuadro-num { position: absolute; left: 12px; top: 10px; font-family: var(--f-serif); font-style: italic; font-weight: 300; font-size: 1.35rem; color: var(--c-texto-2); }
-.cuadro-cta { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 8px; color: var(--c-texto-2); font-size: .78rem; }
-.cuadro-cta .icono { width: 30px; height: 30px; color: var(--c-texto); opacity: .85; }
-.cuadro-cta::after { content: 'Tomar foto'; }
+.cuadro-num { position: absolute; left: 14px; top: 12px; font-family: var(--f-serif); font-style: italic; font-weight: 300; font-size: .95rem; color: var(--c-texto-2); }
+/* Consigna del reto dentro del marco vacío, en cursiva, como tarjeta de mesa */
+.cuadro-desc { position: absolute; inset: 40px 16px 48px; display: grid; place-items: center; text-align: center; font-family: var(--f-serif); font-style: italic; font-weight: 340; font-size: .98rem; line-height: 1.32; color: color-mix(in oklab, var(--c-texto) 86%, transparent); overflow: hidden; }
+.cuadro-cta { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: grid; place-items: center; width: 34px; height: 34px; color: var(--c-texto-2); transition: color 160ms ease; }
+.cuadro-cta .icono { width: 22px; height: 22px; }
+.cuadro:not(.hecho) .cuadro-media::after { content: ''; position: absolute; inset: 5px; border: 1px solid var(--c-linea); border-radius: 2px; pointer-events: none; }
+@media (hover: hover) and (pointer: fine) { .cuadro:not(.hecho) .cuadro-media:hover .cuadro-cta { color: var(--c-texto); } }
 .cuadro-media img { width: 100%; height: 100%; object-fit: cover; border-radius: 2px; }
 .cuadro.hecho .cuadro-media { padding: 7px 7px 26px; background: var(--c-papel); border-color: transparent; box-shadow: 0 14px 28px -18px rgba(0,0,0,.7); }
 .cuadro.hecho .cuadro-media .sello { bottom: 34px; right: 16px; }
@@ -220,12 +223,31 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.5; }
 .cuadro-estado { position: absolute; inset: 0; display: grid; place-content: center; gap: 8px; justify-items: center; padding: 12px; text-align: center; font-size: .82rem; background: color-mix(in oklab, var(--c-fondo) 62%, transparent); }
 .cuadro-titulo { font-family: var(--f-serif); font-weight: 400; font-size: 1.12rem; line-height: 1.2; letter-spacing: -0.01em; }
 .cuadro-pie { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .8rem; color: var(--c-texto-2); }
-.cuadro-pie .mono { color: var(--c-texto-2); font-size: .76rem; }
+.pts { color: var(--c-texto-2); font-size: .8rem; font-variant-numeric: tabular-nums lining-nums; }
+.cuadro.doble .cuadro-pie .pts { color: var(--c-acento-texto); }
+/* Avance de retos: tira de negativos */
+.tira { display: grid; gap: 4px; margin: -2px 0 16px; }
+.tira i { height: 10px; border-radius: 1px; border: 1px solid var(--c-linea-fuerte); transition: background-color 400ms ease, border-color 400ms ease; }
+.tira i.lleno { background: var(--c-texto); border-color: var(--c-texto); }
+.sub-retos { margin: 0 0 4px; font-size: .95rem; }
+/* Siguiente reto: tarjeta con doble filete, como la invitación */
+.destacado { position: relative; margin: 26px 6px 30px; padding: 26px 22px 22px; border: 1px solid var(--c-linea-fuerte); outline: 1px solid var(--c-linea); outline-offset: 5px; background: color-mix(in oklab, var(--c-superficie) 45%, var(--c-fondo)); }
+.destacado.doble { border-color: var(--c-acento); outline-color: color-mix(in oklab, var(--c-acento) 40%, transparent); }
+.destacado-eti { margin: 0 0 12px; font-family: var(--f-serif); font-style: italic; font-size: .95rem; color: var(--c-texto-2); }
+.destacado.doble .destacado-eti { color: var(--c-acento-texto); }
+.destacado-titulo { margin: 0; font-family: var(--f-serif); font-weight: 380; font-size: 2.05rem; line-height: 1.04; letter-spacing: -0.02em; }
+.destacado-desc { margin: 12px 0 0; max-width: 32ch; font-family: var(--f-serif); font-style: italic; font-weight: 340; font-size: 1.08rem; line-height: 1.38; color: var(--c-texto-2); }
+.destacado-pie { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 24px; }
+.destacado-pie .btn { min-height: 46px; padding: 0 20px; }
+/* Cabecera del rollo */
+.rollo-cabeza { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 4px 0 18px; padding-bottom: 12px; border-bottom: 1px solid var(--c-linea); }
+.rollo-cabeza .cursiva { font-size: 1.3rem; }
+.rollo-cabeza small { color: var(--c-texto-2); font-size: .8rem; }
 .cuadro.hecho .cuadro-pie .icono { color: var(--c-acento-texto); }
 .cuadro.doble .cuadro-media { border-color: var(--c-acento); box-shadow: 0 0 0 1px var(--c-acento); }
 .cuadro.doble .cuadro-pie .mono { color: var(--c-acento-texto); }
 .cuadro-ancho { grid-column: 1 / -1; }
-.tarjeta-trivia { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px; width: 100%; padding: 18px 0; border: 0; border-top: 1px solid var(--c-linea); border-bottom: 1px solid var(--c-linea); border-radius: 0; background: none; text-align: left; margin-bottom: 26px !important; }
+.tarjeta-trivia { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px; width: 100%; padding: 18px 0; border: 0; border-top: 1px solid var(--c-linea); border-bottom: 1px solid var(--c-linea); border-radius: 0; background: none; text-align: left; margin-bottom: 34px !important; }
 .tarjeta-trivia b { display: block; font-family: var(--f-serif); font-weight: 400; font-size: 1.3rem; letter-spacing: -0.01em; margin-bottom: 2px; }
 .tarjeta-trivia .icono { width: 22px; height: 22px; }
 .tarjeta-trivia small { color: var(--c-texto-2); }
