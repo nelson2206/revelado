@@ -52,6 +52,17 @@ function aplicarTema(id, raiz = document.documentElement) {
   return t;
 }
 
+// Premium: color propio de la pareja sobre la paleta elegida (se corrige el contraste igual que el acento de la paleta)
+function aplicarMarca(marca, raiz = document.documentElement) {
+  if (!marca?.acento) return;
+  const fondo = getComputedStyle(raiz).getPropertyValue('--c-fondo').trim() || '#ffffff';
+  const texto = getComputedStyle(raiz).getPropertyValue('--c-texto').trim() || '#111111';
+  raiz.style.setProperty('--c-acento', marca.acento);
+  raiz.style.setProperty('--c-acento-2', marca.acento);
+  raiz.style.setProperty('--c-acento-txt', contraste('#111214', marca.acento) >= contraste('#FFFFFF', marca.acento) ? '#111214' : '#FFFFFF');
+  raiz.style.setProperty('--c-acento-texto', legible(marca.acento, fondo, texto));
+}
+
 // Acento para la pantalla (siempre oscura): el más legible entre acento y acento 2, aclarado si hace falta
 function acentoPantalla(t, fondo = '#0E0E10') {
   const mejor = contraste(t.c.acento, fondo) >= 4.5 ? t.c.acento

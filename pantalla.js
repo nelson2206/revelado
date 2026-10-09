@@ -17,6 +17,11 @@
     raiz.style.setProperty('--c-acento', p.color);
     raiz.style.setProperty('--c-acento-txt', p.texto);
     raiz.dataset.modo = 'oscuro';
+    if (info?.marca?.acento) { // Premium: color de la pareja, aclarado para leerse sobre negro
+      const c = legible(info.marca.acento, '#0E0E10', '#F2F0EC', 4.5);
+      raiz.style.setProperty('--c-acento', c);
+      raiz.style.setProperty('--c-acento-txt', contraste('#111214', c) >= contraste('#F2F0EC', c) ? '#111214' : '#F2F0EC');
+    }
   }
 
   async function iniciar() {
@@ -24,7 +29,7 @@
     catch { $('espera').replaceChildren(el('b', { texto: 'No encontramos este evento' }), el('span', { texto: 'Revisa el enlace de la pantalla.' })); return; }
     temaPantalla(info.tema);
     $('nombres').textContent = info.nombres;
-    $('mono').textContent = monograma(info.nombres);
+    $('mono').textContent = info.marca?.monograma || monograma(info.nombres);
     document.title = `${info.nombres} · Pantalla en vivo`;
     qr($('qr'), urlInvitado(codigo, info));
     $('url').textContent = urlCorta(urlInvitado(codigo, info));

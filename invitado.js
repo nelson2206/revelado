@@ -13,7 +13,7 @@
   let puntosPrevios = null, posPrevias = new Map();
   // Plan Básico: sin retos, el invitado sube fotos libres a un álbum compartido
   const libre = () => !info.modulos.includes('retos');
-  const conAvisos = () => info.modulos.includes('avisos');
+  const conAvisos = () => info.modulos.includes('push'); // notificaciones al celular: Premium (el banner de actividades va en Fiesta también)
   let avisoVisto = Number(leer(CLAVE + ':aviso') || 0), avisoCerrado = Number(leer(CLAVE + ':avisoCerrado') || 0);
   let libreEstado = { i: 0, n: 0 };
   const v = {}; // referencias a nodos de cada vista
@@ -54,6 +54,7 @@
     const previa = new URLSearchParams(location.search).get('tema');
     if (previa && TEMAS[previa]) { info.tema = previa; info.previa = true; }
     aplicarTema(info.tema);
+    aplicarMarca(info.marca);
     document.title = `${info.nombres} · ${libre() ? 'Álbum' : 'Retos'}`;
     if (conAvisos()) ponerManifiesto();
     if (!sesion?.token || info.soloLectura) return portada();
@@ -105,7 +106,7 @@
     app.replaceChildren(el('section', { class: 'portada' },
       el('div', { class: 'invitacion' },
         info.socio ? el('p', { class: 'inv-socio', texto: `Una experiencia de ${info.socio}` }) : null,
-        el('span', { class: 'monograma', 'aria-hidden': 'true', texto: monograma(info.nombres) }),
+        el('span', { class: 'monograma', 'aria-hidden': 'true', texto: info.marca?.monograma || monograma(info.nombres) }),
         titulo,
         el('span', { class: 'inv-regla', 'aria-hidden': 'true' }),
         el('div', { class: 'portada-meta' },
@@ -120,7 +121,7 @@
     try {
       est = await api(`/e/${codigo}/estado?n=120`, { headers: { 'x-token': sesion?.token || '' } });
       if (sesion?.token && !est.yo) { sesion = null; guardar(CLAVE, null); portada(); }
-      if (!info.previa && est.tema && est.tema !== info.tema) { info.tema = est.tema; aplicarTema(est.tema); }
+      if (!info.previa && est.tema && est.tema !== info.tema) { info.tema = est.tema; aplicarTema(est.tema); aplicarMarca(info.marca); }
     } catch { /* sin señal: seguimos con lo último */ }
   }
 
@@ -696,7 +697,7 @@
   // Vista previa de paletas desde el panel o la web (misma página de origen, sin recargar)
   addEventListener('message', (e) => {
     if (e.origin !== location.origin || e.data?.tipo !== 'tema' || !TEMAS[e.data.tema] || !info) return;
-    info.tema = e.data.tema; info.previa = true; aplicarTema(e.data.tema);
+    info.tema = e.data.tema; info.previa = true; aplicarTema(e.data.tema); aplicarMarca(info.marca);
   });
 
   // ---------- refresco periódico ----------
